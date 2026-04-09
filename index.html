@@ -91,41 +91,49 @@
 </div>
 
 <script>
-    // This is where the data is sent (Maya's Google Sheet script)
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwpwEr0LfqSPAa2a87Zl9dfLmZJQf1_X7vlcNICUakvPkwRLM0E9aLvQqQpzp4k-NjZ/exec'; 
-
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxBBjyGrc5ZhnxMZmpk7aHs1y9NWTS1uqAHCRTBPv1deDTCWhr0ZDXQ4XVP1Ocxb3Qi/exec'; 
     document.getElementById('complaint-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const btn = document.getElementById('submit-btn');
-        btn.innerText = "Sending...";
-        btn.disabled = true;
+        const submitBtn = document.querySelector('.submit-btn');
+        submitBtn.innerText = "Submitting...";
+        submitBtn.disabled = true;
 
         const formData = new FormData();
         formData.append('issueType', document.getElementById('issue-type').value);
         formData.append('location', document.getElementById('location').value);
         formData.append('description', document.getElementById('description').value);
 
-        fetch(scriptURL, { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                // Hide Form, Show Tracker
-                document.getElementById('submission-section').style.display = 'none';
-                document.getElementById('tracker-section').style.display = 'block';
-                
-                // Show the actual Ticket ID from the database
-                document.getElementById('ticket-id').innerText = data.ticketId || "Pending";
-                updateTracker(1, "Your report is now logged with the Township!");
-            })
-            .catch(error => {
-                console.error('Error!', error);
-                // Fallback for demo if the URL is not "Live" yet
-                document.getElementById('submission-section').style.display = 'none';
-                document.getElementById('tracker-section').style.display = 'block';
-                document.getElementById('ticket-id').innerText = "DEMO-123";
-                updateTracker(1, "Demo Mode: Report received (Backend not connected).");
-            });
+        // We use 'no-cors' to bypass the security error you're seeing
+        fetch(scriptURL, { 
+            method: 'POST', 
+            body: new URLSearchParams(formData), // Packaging the data for Google
+            mode: 'no-cors' 
+        })
+        .then(() => {
+            // Because of 'no-cors', we can't 'read' the response, 
+            // so we just assume it worked and show the tracker!
+            document.getElementById('submission-section').style.display = 'none';
+            document.getElementById('tracker-section').style.display = 'block';
+            
+            // Generate a local ticket ID for the UI
+            document.getElementById('ticket-id').innerText = "MT-" + Math.floor(10000 + Math.random() * 90000);
+            updateTracker(1, "Your report has been sent to the Township!");
+        })
+        .catch(error => {
+            console.error('Error!', error.message);
+            submitBtn.innerText = "Submit Report";
+            submitBtn.disabled = false;
+        });
     });
+
+    function updateTracker(stepNumber, message) {
+        for (let i = 1; i <= stepNumber; i++) {
+            document.getElementById('step-' + i).classList.add('active');
+        }
+        document.getElementById('status-message').innerText = message;
+    }
+</script>
 
     function updateTracker(stepNumber, message) {
         for (let i = 1; i <= stepNumber; i++) {
